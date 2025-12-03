@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kuis Basa Jawa - SAS</title>
+  <style>
+    :root{--bg:#fcfcfe;--card:#fff;--accent:#0b84ff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;background:var(--bg);color:#111}
+    .wrap{max-width:900px;margin:14px auto;padding:14px}
+    header{display:flex;align-items:center;gap:12px}
+    header h1{font-size:18px;margin:0}
+    .timer{margin-left:auto;background:#fff;padding:8px 12px;border-radius:999px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+    .card{background:var(--card);border-radius:12px;padding:14px;margin-top:12px;box-shadow:0 6px 20px rgba(12,12,12,.06)}
+    .soal{padding:12px;border-radius:10px;margin-bottom:12px;background:linear-gradient(180deg,#fff,#fbfdff)}
+    .qnum{font-weight:700;margin-bottom:6px}
+    .choices{display:grid;gap:8px}
+    .choice{padding:10px;border-radius:8px;border:1px solid #e3e6ee;cursor:pointer}
+    .choice.selected{outline:3px solid rgba(11,132,255,.1)}
+    .choice.correct{background:#e6ffed;border-color:#a6f3b6}
+    .choice.wrong{background:#ffecec;border-color:#ffb6b6}
+    .controls{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-top:12px}
+    button{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.secondary{background:#fff;color:#111;border:1px solid #e3e6ee}
+    .result{font-size:20px;font-weight:800;text-align:center;padding:16px;border-radius:10px}
+    .score{font-size:36px;color:var(--accent)}
+    @media (max-width:600px){header h1{font-size:16px}.wrap{padding:12px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#0b84ff,#7adbf6)"></div>
+      <h1>Kuis Basa Jawa - SD (SAS)</h1>
+      <div class="timer" id="timer">60:00</div>
+    </header>
+
+    <div class="card" id="quizCard">
+      <p style="color:#444;font-size:13px">Instruksi: Pilih 1 jawaban tiap soal. Timer 60 menit. Setelah selesai, jawaban benar berwarna hijau, salah berwarna merah. Nilai 1–100.</p>
+
+      <div id="questions"></div>
+
+      <div class="controls">
+        <div>
+          <button id="prevBtn" class="secondary">Sebelumnya</button>
+          <button id="nextBtn" class="secondary">Berikutnya</button>
+        </div>
+        <div>
+          <button id="finishBtn">Selesai</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="resultCard" style="display:none;margin-top:14px">
+      <div class="result">
+        <div>Skor Anda</div>
+        <div class="score" id="scoreDisplay">0</div>
+        <div id="percentText" style="margin-top:8px;color:#555"></div>
+        <div style="margin-top:12px;font-size:14px;color:#666">(Nilai dalam rentang 1-100 — nilai 0 akan ditampilkan sebagai 1)</div>
+      </div>
+    </div>
+
+    <p style="margin-top:12px;font-size:13px;color:#444">Simpan file ini sebagai <strong>index.html</strong> di repository GitHub kamu.</p>
+  </div>
+
+  <script>
+    const questions = [
+      // 40 soal Basa Jawa: irah-irahan, krama alus, teks deskripsi, sandhangan, aksara
+      {q: '1. Irah-irahan yaiku:', choices:['Judul cerita (nama cerita)','Akhiran tembung','Jenis aksara','Nama penulis'], a:0},
+      {q: '2. Conto irah-irahan sing trep kanggo crita babagan musim: ', choices:['"Migrate Burung"','"Sepedha Motor"','"Roti Lan Susu"','"Meja Kayu"'], a:0},
+      {q: '3. Basa krama alus biasane dienggo kanggo:', choices:['Ngormati wong tuwa utawa guru','Ngomong karo kanca sedulur','Nulis cathetan pribadi','Ngomong karo bocah cilik'], a:0},
+      {q: '4. Krama alus saka tembung "mangan" yaiku:', choices:['nedha','mangan','mogel','tindak'], a:0},
+      {q: '5. Krama alus saka "arep" (akan) yaiku:', choices:['badhe','arep','arep-arep','arepke'], a:0},
+      {q: '6. Teks deskripsi fungsine kanggo:', choices:['Nerangake ciri utawa kaanan sawijining barang utawa panggonan','Ngandhani carita lelampahan','Nulis dialog drama','Nulis huruf aksara'], a:0},
+      {q: '7. Yen nerangake kadesan, teks deskripsi bakal nyebutake:', choices:['Wujud, warna, lan swara','Rekening bank','Spam email','Jumlah sandhangan'], a:0},
+      {q: '8. Sandhangan "pêké" (wulu) ing aksara Jawa nambah swara:', choices:['i','a','u','e'], a:0},
+      {q: '9. Sandhangan "taling" nambah swara:', choices:['i','e','o','u'], a:1},
+      {q: '10. Ing aksara Jawa, aksara kanggo bunyi ' + "ka" + ' ditulis minangka:', choices:['ka (ꦏ)','ga (ꦒ)','na (ꦤ)','pa (ꦥ)'], a:0},
+
+      {q: '11. Irah-irahan sing cekak lan jelas biasane ngomongake:', choices:['Topik utawa inti crita','Daftar belanja','Alamat omah','Nama kucing'], a:0},
+      {q: '12. Krama inggil yaiku:', choices:['Bentuk paling alus ing basa Jawa kanggo ngajeni','Tembung kasar','Jenis aksara sing rusak','Cara nggawe tembang'], a:0},
+      {q: '13. Conto tembung krama inggil saka "ngandhani" yaiku:', choices:['ngaturaken','ngandika','menehi','nulis'], a:0},
+      {q: '14. Teks deskripsi sing nyritakake rasa panganan bakal nyebutake:', choices:['Rasa, wangine, lan tekstur','Wektu sinau','Nomor ponsel','Ukuran sepatu'], a:0},
+      {q: '15. Sandhangan "wulu" (cecak) dilebokake kanggo nambah swara:', choices:['i','u','o','e'], a:1},
+      {q: '16. Sandhangan pangkon (virama) digunakake kanggo:', choices:['Mbusak vokal ing aksara supaya mandheg ing konsonan','Nambah vokal','Nulis nomer','Nggandheng tembung'], a:0},
+      {q: '17. Aksara Jawa ' + 'ꦥ' + ' diarani:', choices:['pa','ba','tha','sa'], a:0},
+      {q: '18. Irah-irahan kudu narik kawigaten amarga:', choices:['Nggawe wong kepingin maca crita','Ngurangi jumlah kaca','Ngilangake isi crita','Ngubah basa'], a:0},
+      {q: '19. Krama alus kanggo ngucapake "menehi" yaiku:', choices:['paringi','menehi','tanggepi','diparingi'], a:0},
+      {q: '20. Teks deskripsi sing apik biasane nggunakake basa sing:', choices:['Cetha lan rinci','Ambigu','Ora ana gambaran','Panjang-panjang tanpa isi'], a:0},
+
+      {q: '21. Sandhangan "cecak telu" (pepet) nggawe swara:', choices:['eu/pepet','i','a','o'], a:0},
+      {q: '22. Aksara Jawa ' + 'ꦤ' + ' diarani:', choices:['na','da','ma','la'], a:0},
+      {q: '23. Pilih irah-irahan sing pas kanggo teks deskripsi kembang:', choices:['"Kembang Mawar Ing Taman"','"Cara Masak Sup"','"Daftar Guru"','"Angin Malem"'], a:0},
+      {q: '24. Krama alus kanggo "tidur" yaiku:', choices:['suwun','tilem','tur','ngaso'], a:1},
+      {q: '25. Teks deskripsi beda karo teks narasi amarga fokus ing:', choices:['Gambaran rinci, dudu urutan wektu','Urutan kedadeyan','Dialog antar tokoh','Instruksi kerja'], a:0},
+      {q: '26. Sandhangan "pepet" ditulis kanggo ngganti swara:', choices:['a dadi ə (pelafalan lemes)','i dadi e','u dadi o','a dadi o'], a:0},
+      {q: '27. Aksara ' + 'ꦱ' + ' jenenge:', choices:['sa','ca','ya','na'], a:0},
+      {q: '28. Nalika milih irah-irahan, sing perlu digatekake yaiku:', choices:['Apa inti crita lan sapa sing bakal maca','Warna judhul','Jumlah kaca','Font sing digunakake'], a:0},
+      {q: '29. Krama sing pas kanggo ngajeni tamu yaiku:', choices:['Nganggé krama alus/krama inggil','Ngomong nganggo slank','Ngomong ala','Ngomong kasar'], a:0},
+      {q: '30. Teks deskripsi babagan omah bakal nyebutake:', choices:['Wujud, warna, lan bahan bangunan','Jumlah warga negara','Ukuran kelas','Jenis sepatu'], a:0},
+
+      {q: '31. Sandhangan "taling" lan "taling tarung" beda fungsi ing swara: ', choices:['Ya, panganggone beda kanggo vokal e lan o','Ora, padha wae','Mung kanggo nulis nomer','Mung kanggo nulis jeneng'], a:0},
+      {q: '32. Aksara ' + 'ꦒ' + ' diarani:', choices:['ga','ba','ka','pa'], a:0},
+      {q: '33. Irah-irahan sing kurang cocok kanggo cerita lelungan yaiku:', choices:['"Resep Sate"','"Lelungan menyang Segara"','"Perjalanan ing Alas"','"Petualangan Sepur"'], a:0},
+      {q: '34. Nalika nggunakake krama alus, kita kudu nggatekake:', choices:['Sapa lawan ucapane (umur/posisi)','Warna gitar','Harga buku','Jumlah kaca'], a:0},
+      {q: '35. Teks deskripsi asring nggunakake tembung sing:', choices:['Njelas lan rinci kaya adjektiva','Kosong tanpa gambaran','Angka-angka ekonomi','Kode program'], a:0},
+      {q: '36. Sandhangan "cecak siji" nambah swara:', choices:['i','u','a','e'], a:0},
+      {q: '37. Aksara ' + 'ꦥ' + ' lan ' + 'ꦧ' + ' bedane ing bunyi yaiku:', choices:['p lan b (voiceless lan voiced)','p lan t','k lan g','n lan m'], a:0},
+      {q: '38. Irah-irahan sing apik kanggo teks deskripsi panganan yaiku:', choices:['"Rasa Legi Kue Lapis"','"Pasar Malam"','"Gunung Lan Lembah"','"Sepeda Anyar"'], a:0},
+      {q: '39. Krama alus sing nduweni panggunaan resmi yaiku:', choices:['Basa sing digunakake kanggo acara adat lan ngomong marang wong tuwa','Basa gaul kancane','Istilah teknis komputer','Kode rahasia'], a:0},
+      {q: '40. Aksara Jawa digunakake kanggo nulis basa:', choices:['Jawa','Inggris','Mandarin','Arab'], a:0}
+    ];
+
+    const total = questions.length;
+    const questionsDiv = document.getElementById('questions');
+    let currentIndex = 0;
+    const answers = new Array(total).fill(null);
+
+    function renderQuestion(i){
+      const q = questions[i];
+      questionsDiv.innerHTML = `\n        <div class="soal" data-index="${i}">\n          <div class="qnum">Soal ${i+1} / ${total}</div>\n          <div class="qtext">${q.q}</div>\n          <div class="choices" id="choices-${i}"></div>\n        </div>`;
+
+      const choicesDiv = document.getElementById(`choices-${i}`);
+      q.choices.forEach((c, idx)=>{
+        const btn = document.createElement('div');
+        btn.className = 'choice';
+        btn.tabIndex = 0;
+        btn.innerText = String.fromCharCode(65+idx)+'. '+c;
+        btn.addEventListener('click',()=>selectChoice(i, idx));
+        btn.addEventListener('keypress',(e)=>{ if(e.key==='Enter') selectChoice(i, idx); });
+        if(answers[i]===idx) btn.classList.add('selected');
+        choicesDiv.appendChild(btn);
+      });
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+
+    function selectChoice(qIndex, choiceIndex){
+      answers[qIndex]=choiceIndex;
+      const container = document.getElementById(`choices-${qIndex}`);
+      Array.from(container.children).forEach((el, idx)=>{
+        el.classList.toggle('selected', idx===choiceIndex);
+      });
+    }
+
+    document.getElementById('prevBtn').addEventListener('click', ()=>{
+      if(currentIndex>0) currentIndex--;
+      renderQuestion(currentIndex);
+    });
+    document.getElementById('nextBtn').addEventListener('click', ()=>{
+      if(currentIndex<total-1) currentIndex++;
+      renderQuestion(currentIndex);
+    });
+
+    document.getElementById('finishBtn').addEventListener('click', finishQuiz);
+
+    function finishQuiz(){
+      let correct = 0;
+      for(let i=0;i<total;i++){
+        const choicesDiv = document.getElementById(`choices-${i}`);
+        if(!choicesDiv) continue;
+        Array.from(choicesDiv.children).forEach((el, idx)=>{
+          el.classList.remove('selected');
+          if(idx===questions[i].a){
+            el.classList.add('correct');
+          }
+          if(answers[i]===idx && answers[i]!==questions[i].a){
+            el.classList.add('wrong');
+          }
+        });
+        if(answers[i]===questions[i].a) correct++;
+      }
+
+      let score = Math.round((correct/total)*100);
+      if(score===0) score = 1;
+
+      document.getElementById('scoreDisplay').innerText = score;
+      document.getElementById('percentText').innerText = `(${correct} dari ${total} benar)`;
+      document.getElementById('resultCard').style.display = 'block';
+
+      document.getElementById('finishBtn').disabled = true;
+      document.getElementById('prevBtn').disabled = true;
+      document.getElementById('nextBtn').disabled = true;
+
+      document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+    }
+
+    // Timer 60 minutes
+    let timeLeft = 60*60;
+    const timerEl = document.getElementById('timer');
+    function updateTimer(){
+      const m = Math.floor(timeLeft/60).toString().padStart(2,'0');
+      const s = (timeLeft%60).toString().padStart(2,'0');
+      timerEl.innerText = `${m}:${s}`;
+      if(timeLeft<=0){
+        clearInterval(timerInterval);
+        finishQuiz();
+      }
+      timeLeft--;
+    }
+    updateTimer();
+    const timerInterval = setInterval(updateTimer,1000);
+
+    renderQuestion(0);
+  </script>
+</body>
+</html>
